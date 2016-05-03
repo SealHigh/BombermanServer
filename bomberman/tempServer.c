@@ -39,7 +39,7 @@ void init_server()
         TCPsocket  tmpsocket = SDLNet_TCP_Accept(server);
         add_clients(tmpsocket, &sockets,&socketList,&playernum,&curID, tmp);
         check_data(tmpsocket, &sockets,&socketList,&playernum,&curID, tmp);
-        check_DC(tmpsocket, &sockets,&socketList,&playernum,&curID, tmp);
+        //check_DC(tmpsocket, &sockets,&socketList,&playernum,&curID, tmp);
        SDL_Delay(1);
   }
    for(int i=0; i<playernum; i++)
@@ -83,7 +83,7 @@ void check_data(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList
                     dlist_removeElement(socketList, 0); //Crashes here
 
                     dlist_print(socketList);
-                    //Make data array linked list and delete socket from it here
+
                     playernum -= 1;
                 }
 
