@@ -124,9 +124,7 @@ int dlist_removeElement(Dlist *list, int number) // removes a give item from the
 
 DlistElement *get_list_postition(Dlist *list, int pos)   // prints the list,totalPrice and totalAmount
 {
-    int count;
     DlistElement* currentElement = list->element;
-
     for(int i = 0; i < pos; i++)
     {
         if(currentElement->next)
@@ -152,11 +150,14 @@ int dlist_size(Dlist *list)   // prints the list,totalPrice and totalAmount
 
 void dlist_print(Dlist *list)   // prints the list,totalPrice and totalAmount
 {
+    int count = 0;
     DlistElement* currentElement = list->element;
     while(currentElement != NULL)
     {
-        printf("Name: %d\n",currentElement->id);
+        printf("Pos: %d\n",count);
+        printf("ID: %d\n",currentElement->id);
         currentElement = currentElement->next;
+        count++;
     }
 }
 
