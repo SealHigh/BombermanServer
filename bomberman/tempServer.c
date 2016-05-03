@@ -7,7 +7,7 @@
 
 void init_server()
 {
-    SDL_Init(SDL_INIT_EVERYTHING);
+
 
     SDLNet_Init();
     int curID = 0; //Used for unique ID
