@@ -159,6 +159,9 @@ void dlist_print(Dlist *list)   // prints the list,totalPrice and totalAmount
         currentElement = currentElement->next;
         count++;
     }
+    if(currentElement ==NULL){
+        printf("empty list\n");
+    }
 }
 
 
