@@ -44,35 +44,46 @@ void init_server()
             if(event.type == SDL_QUIT)
                 running = false;
         TCPsocket  tmpsocket = SDLNet_TCP_Accept(server);
-        add_clients(tmpsocket, &sockets,&socketList,&playernum,&ID, tmp);
-        check_DC(tmpsocket, &sockets,&socketList,&playernum,&ID, tmp);
-        check_data(tmpsocket, &sockets,&socketList,&playernum,&ID, tmp);
+        add_clients(tmpsocket, &sockets,&socketList,&playernum,ID, tmp);
+        check_DC(tmpsocket, &sockets,&socketList,&playernum,ID, tmp);
+        check_data(tmpsocket, &sockets,&socketList,&playernum,ID, tmp);
 
        SDL_Delay(1);
   }
-   for(int i=0; i<playernum; i++)
-       SDLNet_TCP_Close(get_list_postition(&socketList,i)->socket);
+    on_exit(&sockets, &socketList, &server, &playernum);
 
-
-       SDLNet_FreeSocketSet(sockets);
-       SDLNet_TCP_Close(server);
-       SDLNet_Quit();
 }
 
+static void on_exit(SDLNet_SocketSet *sockets, Dlist *socketList, TCPsocket *server, int *playernum){
+    for(int i=0; i<*playernum; i++)
+        SDLNet_TCP_Close(get_list_postition(socketList,i)->socket);
 
-static void remove_client(SDLNet_SocketSet *sockets,Dlist *socketList, uID *ID, int j, int *playernum){
 
+    SDLNet_FreeSocketSet(*sockets);
+    SDLNet_TCP_Close(*server);
+    SDLNet_Quit();
+}
+static void remove_client(SDLNet_SocketSet *sockets,Dlist *socketList, uID *ID, int id, int *playernum){
 
-    printf("pos in list to delet: %d\n", j);
-    SDLNet_TCP_DelSocket(*sockets, get_list_postition(socketList, j)->socket);
+    printf("removing player\n");
+
+    int posInList = 0;
+    for(int i= 0; i<*playernum; i++){
+        if(get_list_postition(socketList, i)->id == id){
+            posInList=i;
+            break;
+        }
+    }
+    printf("pos in list to delete: %d\n", posInList);
+    SDLNet_TCP_DelSocket(*sockets, get_list_postition(socketList, posInList)->socket);
     for(int i =  0; i<MAX_PLAYER; i++)
     {
-        if(get_list_postition(socketList, j)->id == ID[i].id)
+        if(get_list_postition(socketList, posInList)->id == ID[i].id)
         {
             ID[i].used = false;
         }
     }
-    dlist_removeElement(socketList, j);
+    dlist_removeElement(socketList, posInList);
 
 
 
@@ -99,16 +110,7 @@ void check_data(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList
                 //Check what kind of message client sent
                 if(type==2) //Postition
                 {
-                    int posInList;
-                    for(int i= 0; i<*playernum; i++){
-                        if(get_list_postition(socketList, i)->id == id){
-                            posInList=i;
-                            break;
-                        }
-                    }
-                    printf("remove player\n");
-
-                    remove_client(sockets, socketList, ID, posInList, playernum);
+                    remove_client(sockets, socketList, ID, id, playernum);
                 }
 
                 if(type==1) //Postition
@@ -147,7 +149,7 @@ void check_data(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList
 void add_clients(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList, int *playernum, uID *ID, char *tmp)
 {
 
-    int curID;
+    int curID=0;
     //Check if new connection
     if(tmpsocket)
     {
@@ -197,11 +199,12 @@ void check_DC(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList, 
             timeoutLimit = SDL_GetTicks() - 5000;
         if (socketList->element != NULL) {
             if (get_list_postition(socketList, j)->timeout < timeoutLimit) {
-                printf("DC: id %d ", get_list_postition(socketList, j)->id);
+                int id = get_list_postition(socketList, j)->id;
+                printf("DC: id %d ", id);
                 printf("time %d \n", get_list_postition(socketList, j)->timeout);
                 sprintf(tmp, "3 %d \n", get_list_postition(socketList, j)->id);
 
-                remove_client(sockets, socketList, ID, j, playernum);
+                remove_client(sockets, socketList, ID,id , playernum);
 
             }
         }
