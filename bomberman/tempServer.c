@@ -108,18 +108,19 @@ void check_data(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList
                 sscanf(tmp, "%d %d",&type, &id);
 
                 //Check what kind of message client sent
-                if(type==2) //Postition
+                if(type==3) //Postition
                 {
                     remove_client(sockets, socketList, ID, id, playernum);
                 }
 
-                if(type==1) //Postition
+                if(type==2) //Postition
                 {
 
                     for(int k=0; k<dlist_size(socketList); k++) //Sends to all connected players except the player that sent the data
                     {
                         if(k==i)
                             continue;
+
 
                         SDLNet_TCP_Send(get_list_postition(socketList,k)->socket,tmp,(int) strlen(tmp)+1);
                     }
@@ -150,6 +151,7 @@ void add_clients(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketLis
 {
 
     int curID=0;
+
     //Check if new connection
     if(tmpsocket)
     {
@@ -175,6 +177,12 @@ void add_clients(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketLis
 
             dlist_print(socketList);
 
+            for(int k=0; k<dlist_size(socketList); k++) //Sends to all connected players except the player that sent the data
+            {
+                sprintf(tmp, "1 0 1 1 \n");
+                SDLNet_TCP_Send(get_list_postition(socketList,k)->socket,tmp,(int) strlen(tmp)+1);
+            }
+
             *playernum+=1;
         }else{
             sprintf(tmp, "4\n");
@@ -194,7 +202,7 @@ void check_DC(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList, 
     {
         int timeoutLimit;
         if (SDL_GetTicks() < 5000)
-            timeoutLimit = SDL_GetTicks() - 500;
+            timeoutLimit = SDL_GetTicks() - SDL_GetTicks();
         else
             timeoutLimit = SDL_GetTicks() - 5000;
         if (socketList->element != NULL) {
