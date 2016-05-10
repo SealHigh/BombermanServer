@@ -48,7 +48,6 @@ void init_server()
         check_DC(tmpsocket, &sockets,&socketList,&playernum,ID, tmp);
         check_data(tmpsocket, &sockets,&socketList,&playernum,ID, tmp);
 
-       SDL_Delay(1);
   }
     on_exit(&sockets, &socketList, &server, &playernum);
 
@@ -58,7 +57,7 @@ static void on_exit(SDLNet_SocketSet *sockets, Dlist *socketList, TCPsocket *ser
     for(int i=0; i<*playernum; i++)
         SDLNet_TCP_Close(get_list_postition(socketList,i)->socket);
 
-
+    dlist_removeAllElements(socketList);
     SDLNet_FreeSocketSet(*sockets);
     SDLNet_TCP_Close(*server);
     SDLNet_Quit();
@@ -144,10 +143,7 @@ void check_data(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList
                     printf("bobmb ahoy\n");
                     for(int k=0; k<dlist_size(socketList); k++) //Sends to all connected players except the player that sent the data
                     {
-                        if(get_list_postition(socketList,k)->id== id)
-                            continue;
-
-                        SDLNet_TCP_Send(get_list_postition(socketList,k)->socket,tmp,(int) strlen(tmp)+1);
+                            SDLNet_TCP_Send(get_list_postition(socketList, k)->socket, tmp, (int) strlen(tmp) + 1);
                     }
                 }
                 else if(type==20) //Disconnect message
