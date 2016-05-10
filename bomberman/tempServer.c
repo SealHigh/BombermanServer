@@ -138,9 +138,9 @@ void check_data(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList
                     }
                 }
 
-                if(type==4) //Postition
+                if(type==4) //Bombs
                 {
-                    printf("bobmb ahoy\n");
+                    printf("bomb ahoy\n");
                     for(int k=0; k<dlist_size(socketList); k++) //Sends to all connected players except the player that sent the data
                     {
                             SDLNet_TCP_Send(get_list_postition(socketList, k)->socket, tmp, (int) strlen(tmp) + 1);
@@ -236,7 +236,7 @@ void check_DC(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList, 
         if (SDL_GetTicks() < 5000)
             timeoutLimit = SDL_GetTicks() - SDL_GetTicks();
         else
-            timeoutLimit = SDL_GetTicks() - 5000;
+            timeoutLimit = SDL_GetTicks() - 60000;
         if (socketList->element != NULL) {
             if (get_list_postition(socketList, j)->timeout < timeoutLimit) {
                 int id = get_list_postition(socketList, j)->id;
