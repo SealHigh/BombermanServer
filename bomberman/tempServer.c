@@ -138,14 +138,14 @@ void check_data(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList
                     }
                 }
 
-                if(type==4) //Postition
+                /*if(type==4) //Postition
                 {
                     printf("bobmb ahoy\n");
                     for(int k=0; k<dlist_size(socketList); k++) //Sends to all connected players except the player that sent the data
                     {
                             SDLNet_TCP_Send(get_list_postition(socketList, k)->socket, tmp, (int) strlen(tmp) + 1);
                     }
-                }
+                }*/
                 else if(type==20) //Disconnect message
                 {
                     for(int k=0; k<*playernum; k++) //Sends to all connected players except the player that sent the data
