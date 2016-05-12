@@ -18,6 +18,7 @@ void init_server()
         ID[i].used = false;
     }
 
+    int map=0;
     int playernum = 0; // Amount of players on server
     SDL_Event event; //Used to exit server
 
@@ -44,7 +45,7 @@ void init_server()
             if(event.type == SDL_QUIT)
                 running = false;
         TCPsocket  tmpsocket = SDLNet_TCP_Accept(server);
-        add_clients(tmpsocket, &sockets,&socketList,&playernum,ID, tmp);
+        add_clients(tmpsocket, &sockets,&socketList,&playernum,ID, tmp, &map);
         check_DC(tmpsocket, &sockets,&socketList,&playernum,ID, tmp);
         check_data(tmpsocket, &sockets,&socketList,&playernum,ID, tmp);
 
@@ -52,9 +53,8 @@ void init_server()
     on_exit(&sockets, &socketList, &server, &playernum);
 
 }
-void add_clients(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList, int *playernum, uID *ID, char *tmp)
+void add_clients(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList, int *playernum, uID *ID, char *tmp, int *map)
 {
-    int map = 0;
     int curID=0;
 
     //Check if new connection
@@ -76,13 +76,13 @@ void add_clients(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketLis
 
             }
             if(curID == 0){
-                map = rand() % 2;
+                *map = rand() % 2;
             }
             dlist_insert_last(socketList,dlist_createElement(curID, tmpsocket, SDL_GetTicks())); // Adds new connection to our connection list
 
             printf("New connection: %d \n", curID);
 
-            sprintf(tmp, "1 %d 1 1 %d \n", curID, map);
+            sprintf(tmp, "1 %d 1 1 %d \n", curID, *map);
             SDLNet_TCP_Send(tmpsocket,tmp,(int) strlen(tmp)+1); //Sends to the client that connected
             SDL_Delay(50); //Needed so the client that connected can init all other functions before it add all other players
 
