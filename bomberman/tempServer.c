@@ -33,6 +33,7 @@ void init_server()
     Dlist socketList;
     dlist_init(&socketList);
 
+    int gameInProgress = 0;
     char tmp[1400];
     bool running = true;
     SDLNet_SocketSet sockets = SDLNet_AllocSocketSet(MAX_PLAYER); // So we can see if any data is sen from any client
@@ -45,22 +46,22 @@ void init_server()
             if(event.type == SDL_QUIT)
                 running = false;
         TCPsocket  tmpsocket = SDLNet_TCP_Accept(server);
-        add_clients(tmpsocket, &sockets,&socketList,&playernum,ID, tmp, &map);
+        add_clients(tmpsocket, &sockets,&socketList,&playernum,ID, tmp, &map, gameInProgress);
         check_DC(tmpsocket, &sockets,&socketList,&playernum,ID, tmp);
-        check_data(tmpsocket, &sockets,&socketList,&playernum,ID, tmp);
+        check_data(tmpsocket, &sockets,&socketList,&playernum,ID, tmp, &gameInProgress);
 
   }
     on_exit(&sockets, &socketList, &server, &playernum);
 
 }
-void add_clients(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList, int *playernum, uID *ID, char *tmp, int *map)
+void add_clients(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList, int *playernum, uID *ID, char *tmp, int *map, int gameInProgress)
 {
     int curID=0;
 
     //Check if new connection
     if(tmpsocket)
     {
-        if (*playernum < MAX_PLAYER)
+        if (*playernum < MAX_PLAYER && gameInProgress == 0)
         {
 
             SDLNet_TCP_AddSocket(*sockets, tmpsocket); //Adds player to list of connections
@@ -113,7 +114,7 @@ void add_clients(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketLis
     }
 }
 
-void check_data(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList, int *playernum, uID *ID, char *tmp)
+void check_data(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList, int *playernum, uID *ID, char *tmp, int *gameInProgress)
 {
     //check for incoming data
     while(SDLNet_CheckSockets(*sockets,0) > 0)
@@ -155,19 +156,10 @@ void check_data(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList
                             SDLNet_TCP_Send(get_list_postition(socketList, k)->socket, tmp, (int) strlen(tmp) + 1);
                     }
                 }
-                else if(type==20) //Disconnect message
+                if(type==8) //Bombs
                 {
-                    for(int k=0; k<*playernum; k++) //Sends to all connected players except the player that sent the data
-                    {
-                        if(k==i)
-                            continue;
-                        SDLNet_TCP_Send(get_list_postition(socketList,k)->socket,tmp,(int) strlen(tmp)+1);
-                    }
-                    SDLNet_TCP_DelSocket(*sockets, get_list_postition(socketList,i)->socket);
-                    SDLNet_TCP_Close(get_list_postition(socketList,i)->socket);
-
-                    //Make data array linked list and delete socket from it here
-                    *playernum -=1;
+                            printf("game going\n");
+                    *gameInProgress = 1;
                 }
             }
         }
