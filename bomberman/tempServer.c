@@ -52,56 +52,65 @@ void init_server()
     on_exit(&sockets, &socketList, &server, &playernum);
 
 }
+void add_clients(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList, int *playernum, uID *ID, char *tmp)
+{
+    int map = 0;
+    int curID=0;
 
-static void on_exit(SDLNet_SocketSet *sockets, Dlist *socketList, TCPsocket *server, int *playernum){
-    for(int i=0; i<*playernum; i++)
-        SDLNet_TCP_Close(get_list_postition(socketList,i)->socket);
-
-    dlist_removeAllElements(socketList);
-    SDLNet_FreeSocketSet(*sockets);
-    SDLNet_TCP_Close(*server);
-    SDLNet_Quit();
-}
-static void remove_client(SDLNet_SocketSet *sockets,Dlist *socketList, uID *ID, int id, int *playernum){
-
-    printf("removing player\n");
-    char tmp[1400];
-
-    int posInList = 0;
-    for(int i= 0; i<*playernum; i++){
-        if(get_list_postition(socketList, i)->id == id){
-            posInList=i;
-            break;
-        }
-    }
-
-    // Send disconnect message to clients
-    sprintf(tmp, "9 %d\n", id);
-    for (int k = 0; k < dlist_size(socketList); k++){
-        if (get_list_postition(socketList, k)->id ==id) // dont send to the client that left
-            continue;
-        printf("sending to %d",get_list_postition(socketList, k)->id);
-        for(int i = 0; i<10; i++) {
-            SDLNet_TCP_Send(get_list_postition(socketList, k)->socket, tmp, (int) strlen(tmp) + 1);
-        }
-    }
-
-    //Delete all client info from server
-    printf("pos in list to delete: %d\n", posInList);
-    SDLNet_TCP_DelSocket(*sockets, get_list_postition(socketList, posInList)->socket);
-    for(int i =  0; i<MAX_PLAYER; i++)
+    //Check if new connection
+    if(tmpsocket)
     {
-        if(get_list_postition(socketList, posInList)->id == ID[i].id)
+        if (*playernum < MAX_PLAYER)
         {
-            ID[i].used = false;
+
+            SDLNet_TCP_AddSocket(*sockets, tmpsocket); //Adds player to list of connections
+
+            for(int i = 0; i<MAX_PLAYER; i++)
+            {
+                if(ID[i].used == false){
+                    printf("%d\n", ID[i].id);
+                    ID[i].used = true;
+                    curID = ID[i].id;
+                    break;
+                }
+
+            }
+            if(curID == 0){
+                map = rand() % 2;
+            }
+            dlist_insert_last(socketList,dlist_createElement(curID, tmpsocket, SDL_GetTicks())); // Adds new connection to our connection list
+
+            printf("New connection: %d \n", curID);
+
+            sprintf(tmp, "1 %d 1 1 %d \n", curID, map);
+            SDLNet_TCP_Send(tmpsocket,tmp,(int) strlen(tmp)+1); //Sends to the client that connected
+            SDL_Delay(50); //Needed so the client that connected can init all other functions before it add all other players
+
+            //Sends to all connected players except the player that sent the data
+            //on client side this fills up the list of players
+            for(int k=0; k<dlist_size(socketList); k++)
+            {
+                for (int i=0; i<dlist_size(socketList); i++)
+                {
+                    if(get_list_postition(socketList,i)->id == curID && get_list_postition(socketList,k)->socket == tmpsocket)
+                    {
+                    }
+                    else{
+                        sprintf(tmp, "1 %d 1 1 \n", get_list_postition(socketList, i)->id);
+                        SDLNet_TCP_Send(get_list_postition(socketList, k)->socket, tmp, (int) strlen(tmp) + 1);
+                        SDL_Delay(20);
+                    }
+                }
+
+            }
+
+            *playernum+=1;
+        }else{
+            sprintf(tmp, "4\n");
+
         }
+
     }
-    dlist_removeElement(socketList, posInList);
-
-
-
-    //Make data array linked list and delete socket from it here
-    *playernum -= 1;
 }
 
 void check_data(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList, int *playernum, uID *ID, char *tmp)
@@ -167,64 +176,7 @@ void check_data(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList
 
 
 
-void add_clients(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList, int *playernum, uID *ID, char *tmp)
-{
 
-    int curID=0;
-
-    //Check if new connection
-    if(tmpsocket)
-    {
-        if (*playernum < MAX_PLAYER)
-        {
-
-            SDLNet_TCP_AddSocket(*sockets, tmpsocket); //Adds player to list of connections
-
-            for(int i = 0; i<MAX_PLAYER; i++)
-            {
-                if(ID[i].used == false){
-                    printf("%d\n", ID[i].id);
-                    ID[i].used = true;
-                    curID = ID[i].id;
-                    break;
-                }
-
-            }
-
-            dlist_insert_last(socketList,dlist_createElement(curID, tmpsocket, SDL_GetTicks())); // Adds new connection to our connection list
-
-            printf("New connection: %d \n", curID);
-
-            sprintf(tmp, "1 %d 1 1 \n", curID);
-            SDLNet_TCP_Send(tmpsocket,tmp,(int) strlen(tmp)+1); //Sends to the client that connected
-            SDL_Delay(50); //Needed so the client that connected can init all other functions before it add all other players
-
-            //Sends to all connected players except the player that sent the data
-            //on client side this fills up the list of players
-            for(int k=0; k<dlist_size(socketList); k++)
-            {
-                for (int i=0; i<dlist_size(socketList); i++)
-                {
-                    if(get_list_postition(socketList,i)->id == curID && get_list_postition(socketList,k)->socket == tmpsocket)
-                    {
-                    }
-                    else{
-                        sprintf(tmp, "1 %d 1 1 \n", get_list_postition(socketList, i)->id);
-                        SDLNet_TCP_Send(get_list_postition(socketList, k)->socket, tmp, (int) strlen(tmp) + 1);
-                        SDL_Delay(20);
-                    }
-                }
-
-            }
-
-            *playernum+=1;
-        }else{
-            sprintf(tmp, "4\n");
-
-        }
-
-    }
-}
 
 
 
@@ -233,8 +185,8 @@ void check_DC(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList, 
     for(int j=0; j<*playernum; j++) // Handles dc'ed player, disconnect after 10 sec
     {
         int timeoutLimit;
-        if (SDL_GetTicks() < 5000)
-            timeoutLimit = SDL_GetTicks() - SDL_GetTicks();
+        if (SDL_GetTicks() < 60000)
+            timeoutLimit = SDL_GetTicks() - SDL_GetTicks() +100;
         else
             timeoutLimit = SDL_GetTicks() - 60000;
         if (socketList->element != NULL) {
@@ -254,10 +206,60 @@ void check_DC(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList, 
 
 
 
+static void remove_client(SDLNet_SocketSet *sockets,Dlist *socketList, uID *ID, int id, int *playernum){
+
+    printf("removing player\n");
+    char tmp[1400];
+
+    int posInList = 0;
+    for(int i= 0; i<*playernum; i++){
+        if(get_list_postition(socketList, i)->id == id){
+            posInList=i;
+            break;
+        }
+    }
+
+    // Send disconnect message to clients
+    sprintf(tmp, "9 %d\n", id);
+    for (int k = 0; k < dlist_size(socketList); k++){
+        if (get_list_postition(socketList, k)->id ==id) // dont send to the client that left
+            continue;
+        printf("sending to %d",get_list_postition(socketList, k)->id);
+        for(int i = 0; i<10; i++) {
+            SDLNet_TCP_Send(get_list_postition(socketList, k)->socket, tmp, (int) strlen(tmp) + 1);
+        }
+    }
+
+    //Delete all client info from server
+    printf("pos in list to delete: %d\n", posInList);
+    SDLNet_TCP_DelSocket(*sockets, get_list_postition(socketList, posInList)->socket);
+    for(int i =  0; i<MAX_PLAYER; i++)
+    {
+        if(get_list_postition(socketList, posInList)->id == ID[i].id)
+        {
+            ID[i].used = false;
+        }
+    }
+    dlist_removeElement(socketList, posInList);
+
+
+
+    //Make data array linked list and delete socket from it here
+    *playernum -= 1;
+}
 
 
 
 
+static void on_exit(SDLNet_SocketSet *sockets, Dlist *socketList, TCPsocket *server, int *playernum){
+    for(int i=0; i<*playernum; i++)
+        SDLNet_TCP_Close(get_list_postition(socketList,i)->socket);
+
+    dlist_removeAllElements(socketList);
+    SDLNet_FreeSocketSet(*sockets);
+    SDLNet_TCP_Close(*server);
+    SDLNet_Quit();
+}
 
 
 
