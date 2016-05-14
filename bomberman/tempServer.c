@@ -156,6 +156,17 @@ void check_data(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList
                             SDLNet_TCP_Send(get_list_postition(socketList, k)->socket, tmp, (int) strlen(tmp) + 1);
                     }
                 }
+                if(type==7) //Died
+                {
+                    printf("player %d died\n", id);
+                    for(int k=0; k<dlist_size(socketList); k++) //Sends to all connected players except the player that sent the data
+                    {
+                        if(k==i)
+                            continue;
+
+                        SDLNet_TCP_Send(get_list_postition(socketList, k)->socket, tmp, (int) strlen(tmp) + 1);
+                    }
+                }
                 if(type==8) //Bombs
                 {
                             printf("game going\n");
@@ -216,7 +227,7 @@ static void remove_client(SDLNet_SocketSet *sockets,Dlist *socketList, uID *ID, 
     for (int k = 0; k < dlist_size(socketList); k++){
         if (get_list_postition(socketList, k)->id ==id) // dont send to the client that left
             continue;
-        printf("sending to %d",get_list_postition(socketList, k)->id);
+        printf("sending to %d\n",get_list_postition(socketList, k)->id);
         for(int i = 0; i<10; i++) {
             SDLNet_TCP_Send(get_list_postition(socketList, k)->socket, tmp, (int) strlen(tmp) + 1);
         }
