@@ -50,17 +50,64 @@ void init_server()
         check_DC(tmpsocket, &sockets,&socketList,&playernum,ID, tmp);
         check_data(tmpsocket, &sockets,&socketList,&playernum,ID, tmp, &gameInProgress);
 
+        //If all players have left reset so a new game can start
+        if(get_list_postition(&socketList,0)== NULL){
+            gameInProgress = 0;
+        }
   }
     on_exit(&sockets, &socketList, &server, &playernum);
 
 }
+
+void get_star_pos(int id, int *x, int *y){
+    switch(id) {
+        case 0:
+            *x=1;
+            *y=1;
+            break;
+        case 1:
+            *x=7;
+            *y=1;
+            break;
+        case 2:
+            *x=1;
+            *y=13;
+            break;
+        case 3:
+            *x=13;
+            *y=1;
+            break;
+        case 4:
+            *x=1;
+            *y=7;
+            break;
+        case 5:
+            *x=13;
+            *y=13;
+            break;
+        case 6:
+            *x=7;
+            *y=7;
+            break;
+        case 7:
+            *x=7;
+            *y=13;
+            break;
+
+    }
+}
+
 void add_clients(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList, int *playernum, uID *ID, char *tmp, int *map, int gameInProgress)
 {
     int curID=0;
-
+    int curX=1;
+    int curY=1;
     //Check if new connection
     if(tmpsocket)
     {
+        //Make sure that we dont add more players than server can handle, and that a game session aint running
+        //This means nothing here will be called during a game session so having delays here won't effect
+        //the preformance while players are playing.
         if (*playernum < MAX_PLAYER && gameInProgress == 0)
         {
 
@@ -76,14 +123,21 @@ void add_clients(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketLis
                 }
 
             }
+
+            //If we wanted to have a map slection this could be changed to recivie such a packet from the
+            // first client to connect, for no it's just a random map between those we have
             if(curID == 0){
                 *map = rand() % 2;
             }
+
             dlist_insert_last(socketList,dlist_createElement(curID, tmpsocket, SDL_GetTicks())); // Adds new connection to our connection list
 
             printf("New connection: %d \n", curID);
 
-            sprintf(tmp, "1 %d 1 1 %d \n", curID, *map);
+            get_star_pos(curID, &curX, &curY);
+
+            //Send connection packet to the client that connected
+            sprintf(tmp, "1 %d %d %d %d \n", curID,curX,curY, *map);
             SDLNet_TCP_Send(tmpsocket,tmp,(int) strlen(tmp)+1); //Sends to the client that connected
             SDL_Delay(50); //Needed so the client that connected can init all other functions before it add all other players
 
@@ -95,19 +149,22 @@ void add_clients(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketLis
                 {
                     if(get_list_postition(socketList,i)->id == curID && get_list_postition(socketList,k)->socket == tmpsocket)
                     {
+                        //Don't send back to the player whom sent it
                     }
                     else{
-                        sprintf(tmp, "1 %d 1 1 \n", get_list_postition(socketList, i)->id);
+                        get_star_pos(get_list_postition(socketList, i)->id, &curX, &curY);
+                        sprintf(tmp, "1 %d %d %d \n", get_list_postition(socketList, i)->id, curX,curY);
                         SDLNet_TCP_Send(get_list_postition(socketList, k)->socket, tmp, (int) strlen(tmp) + 1);
                         SDL_Delay(20);
                     }
                 }
 
             }
-
             *playernum+=1;
         }else{
-            sprintf(tmp, "4\n");
+            //Send lobby is running to client
+            sprintf(tmp, "3\n");
+            SDLNet_TCP_Send(tmpsocket,tmp,(int) strlen(tmp)+1);
 
         }
 
@@ -131,7 +188,7 @@ void check_data(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList
                 sscanf(tmp, "%d %d",&type, &id);
 
                 //Check what kind of message client sent
-                if(type==3) //Postition
+                if(type==3) //Disconnect
                 {
                     remove_client(sockets, socketList, ID, id, playernum);
                 }
@@ -153,6 +210,9 @@ void check_data(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList
                     printf("bomb ahoy\n");
                     for(int k=0; k<dlist_size(socketList); k++) //Sends to all connected players except the player that sent the data
                     {
+                        if(k==i)
+                            continue;
+
                             SDLNet_TCP_Send(get_list_postition(socketList, k)->socket, tmp, (int) strlen(tmp) + 1);
                     }
                 }
@@ -167,9 +227,13 @@ void check_data(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketList
                         SDLNet_TCP_Send(get_list_postition(socketList, k)->socket, tmp, (int) strlen(tmp) + 1);
                     }
                 }
-                if(type==8) //Bombs
+                if(type==8) //Start
                 {
                             printf("game going\n");
+                    for(int k=0; k<dlist_size(socketList); k++) //Sends to all connected players except the player that sent the data
+                    {
+                        SDLNet_TCP_Send(get_list_postition(socketList, k)->socket, tmp, (int) strlen(tmp) + 1);
+                    }
                     *gameInProgress = 1;
                 }
             }
