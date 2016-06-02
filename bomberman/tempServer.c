@@ -126,7 +126,7 @@ void add_clients(TCPsocket tmpsocket, SDLNet_SocketSet *sockets,Dlist *socketLis
 
             //If we wanted to have a map slection this could be changed to recivie such a packet from the
             // first client to connect, for no it's just a random map between those we have
-            if(curID == 0 && !gameInProgress){
+            if(curID == 0 && dlist_size(socketList)==0){
                 *map = rand() % 2;
             }
 
